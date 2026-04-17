@@ -1,21 +1,16 @@
-import { type MouseEvent as ReactMouseEvent, type MutableRefObject, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { ArrowUpRight, ChevronDown, ChevronUp, Menu, Pin, X } from "lucide-react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Bloom, ChromaticAberration, EffectComposer, Noise as PostNoise, Vignette } from "@react-three/postprocessing";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
-import { BlendFunction } from "postprocessing";
 import Splitting from "splitting";
-import * as THREE from "three";
 
 type CertCategory = "all" | "ibm" | "upskillist" | "cognitive";
 type LeetLang = "python" | "cpp";
 type PublicationType = "patent" | "journal" | "conference" | "article";
 type Level = "hard" | "medium" | "easy";
-type SectionId = "home" | "about" | "featured" | "experience" | "projects" | "education" | "certifications" | "journey" | "publications" | "leetcode" | "contact";
-type SceneMode = "nebula" | "circuit" | "tunnel";
+type SectionId = "home" | "about" | "featured" | "experience" | "projects" | "education" | "certifications" | "journey" | "awards" | "publications" | "leetcode" | "contact";
 
 type MediaItem = {
   type: "image" | "video";
@@ -48,6 +43,7 @@ const navItems: Array<{ label: string; id: SectionId }> = [
   { label: "Education", id: "education" },
   { label: "Certifications", id: "certifications" },
   { label: "Journey", id: "journey" },
+  { label: "Awards", id: "awards" },
   { label: "Publications", id: "publications" },
   { label: "Problem Solving", id: "leetcode" },
   { label: "Contact", id: "contact" },
@@ -71,19 +67,6 @@ const techTape = [
   "LLM Runtime",
   "Performance Engineering",
 ];
-
-const sceneModes: Array<{ key: SceneMode; label: string }> = [
-  { key: "nebula", label: "Nebula" },
-  { key: "circuit", label: "Circuit Grid" },
-  { key: "tunnel", label: "Particle Tunnel" },
-];
-
-const renderConfig = {
-  dpr: [0.9, 1.6] as [number, number],
-  density: 0.78,
-  antialias: true,
-  post: "full" as const,
-};
 
 const certifications = [
   {
@@ -480,14 +463,6 @@ const topProjectRoleContribution: Record<string, { role: string; contribution: s
   },
 };
 
-const researchMetrics = [
-  { value: "94.2%", label: "Accuracy" },
-  { value: "2.2ms", label: "Inference" },
-  { value: "450/s", label: "Throughput" },
-  { value: "47.3M", label: "Parameters" },
-  { value: "+4-6%", label: "SOTA Gain" },
-];
-
 const education = [
   {
     institute: "Dr MGR Educational and Research Institute",
@@ -546,6 +521,7 @@ const technicalSkills = {
 const journeyEvents = [
   {
     id: "malaysia",
+    track: "International",
     title: "Malaysia - UCSI University & Kuala Lumpur",
     date: "3-7 Oct 2025",
     summary: "International tech exposure visit with workshops, industry interactions, and cultural learning.",
@@ -573,6 +549,7 @@ const journeyEvents = [
   },
   {
     id: "kerala",
+    track: "National",
     title: "Kerala - IEI National Conference",
     date: "10-11 Jun 2025",
     summary: "National-level paper presentation on water sustainability and reduction strategies.",
@@ -598,6 +575,56 @@ const journeyEvents = [
     ],
     videos: [],
   },
+  {
+    id: "stpi-chennai",
+    track: "Industrial Visit",
+    title: "STPI Chennai - Department of Data Science Industrial Visit",
+    date: "08 Apr 2026",
+    summary: "Industrial exposure visit to Software Technology Park of India (STPI), Taramani, Chennai.",
+    details:
+      "Department of Data Science organized this industrial visit for the 2024 batch at STPI, Taramani, Chennai. The visit covered STPI research initiatives, internship and placement opportunities, data center and networking infrastructure, startup incubation, and government IT-industry support programs. A technical seminar by Mr. Senthil and Mrs. Sangeetha from STPI helped students understand real IT work environments and practical career pathways.",
+    skills: [
+      "Industry Exposure",
+      "Data Center Fundamentals",
+      "Networking Infrastructure",
+      "Startup Incubation Awareness",
+      "Career Planning",
+      "Technical Seminar Participation",
+    ],
+    photos: [
+      "/images/journey/stpi/1.jpg",
+      "/images/journey/stpi/2.jpg",
+      "/images/journey/stpi/3.jpg",
+      "/images/journey/stpi/4.jpg",
+      "/images/journey/stpi/5.jpg",
+    ],
+    videos: [],
+  },
+];
+
+const journeyTrackOrder = ["International", "National", "Industrial Visit"] as const;
+
+const awards = [
+  {
+    id: "audi-international-collab",
+    event: "AUDI DEST 2026",
+    title: "International Collaboration Excellence",
+    date: "15 Apr 2026",
+    description:
+      "Awarded for international collaboration excellence during the academic year 2025-2026, recognizing global engagement and academic contribution.",
+    photos: ["/images/awards/audi-dest/3.jpg", "/images/awards/audi-dest/4.jpg"],
+    videos: ["/images/awards/audi-dest/video1.mp4"],
+  },
+  {
+    id: "audi-student-research",
+    event: "AUDI DEST 2026",
+    title: "Student Research Achievement",
+    date: "15 Apr 2026",
+    description:
+      "Recognized for student research achievement in the academic year 2025-2026, acknowledging research excellence and innovation for patent-oriented work.",
+    photos: ["/images/awards/audi-dest/1.jpg", "/images/awards/audi-dest/2.jpg"],
+    videos: [],
+  },
 ];
 
 const publications = [
@@ -617,7 +644,8 @@ const publications = [
     source: "AAIMB 2026 | S.A. Engineering College",
     date: "2026",
     description:
-      "Conference presentation by Arrhat Nag and M. Gayathri. The hybrid BiLSTM+CNN+attention model reports 94.2% accuracy on Sentiment140 with strong efficiency metrics (2.2ms latency, 450 samples/sec).",
+      "Conference presentation by Arrhat Nag and M. Gayathri. The hybrid BiLSTM+CNN+attention model demonstrated strong sentiment classification and pattern-recognition performance on large-scale social data.",
+    metrics: ["94.2% Accuracy", "2.2ms Inference", "450/s Throughput", "47.3M Parameters", "+4-6% SOTA Gain"],
     link: "https://www.youtube.com/watch?v=0dUQILDT_Cg",
   },
   {
@@ -872,12 +900,6 @@ function findFirstYouTubeLink(links: Array<{ label: string; href: string }>) {
   return links.find((link) => toYouTubeEmbedUrl(link.href));
 }
 
-function getSceneForSection(section: SectionId): SceneMode {
-  if (["home", "about", "featured"].includes(section)) return "nebula";
-  if (["experience", "projects", "education", "certifications"].includes(section)) return "circuit";
-  return "tunnel";
-}
-
 function triggerTextScramble(element: HTMLElement) {
   const targetText = element.dataset.scrambleText ?? element.textContent ?? "";
   if (!targetText) return;
@@ -906,47 +928,28 @@ function triggerTextScramble(element: HTMLElement) {
   });
 }
 
-function MiniProjectBackground({ mode }: { mode: SceneMode }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  useFrame((state, delta) => {
-    if (!meshRef.current) return;
-    meshRef.current.rotation.z += delta * 0.12;
-    meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.24) * 0.16;
-  });
-
-  return (
-    <>
-      <ambientLight intensity={0.4} />
-      <pointLight position={[2, 2, 3]} color="#22d3ee" intensity={1.25} />
-      <pointLight position={[-2, -1.5, 2]} color="#8b5cf6" intensity={1.1} />
-      <group ref={meshRef}>
-        {mode === "nebula" ? <NebulaField turbulence={0.35} density={0.34} /> : null}
-        {mode === "circuit" ? <CircuitGrid turbulence={0.3} /> : null}
-        {mode === "tunnel" ? <ParticleTunnel turbulence={0.38} density={0.32} /> : null}
-      </group>
-    </>
-  );
-}
-
 function ProjectDemoWindow({ title, demoVideo, enableBackdrop }: DemoWindowProps) {
   const shouldReduceMotion = useReducedMotion();
-  const mode = useMemo<SceneMode>(() => {
-    if (title.includes("Kernel") || title.includes("Firmware")) return "circuit";
-    if (title.includes("Universe") || title.includes("GENESIS")) return "nebula";
-    return "tunnel";
-  }, [title]);
 
   return (
     <div className="pt-2">
       <p className="text-xs uppercase tracking-wider text-white/50">Demo Window</p>
       <div className="relative mt-2 w-full max-w-3xl overflow-hidden border border-white/15 bg-black/60">
         {!shouldReduceMotion && enableBackdrop ? (
-          <div aria-hidden className="pointer-events-none absolute inset-0 opacity-45">
-            <Canvas camera={{ position: [0, 0, 6.4], fov: 56 }} dpr={[0.7, 1.2]} gl={{ alpha: true, antialias: true }}>
-              <MiniProjectBackground mode={mode} />
-            </Canvas>
-          </div>
+          <>
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,rgba(34,211,238,0.26),transparent_42%),radial-gradient(circle_at_80%_75%,rgba(139,92,246,0.24),transparent_45%)]"
+              animate={{ opacity: [0.45, 0.62, 0.45], scale: [1, 1.03, 1] }}
+              transition={{ duration: 7.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,transparent_20%,rgba(56,189,248,0.14)_45%,transparent_70%)]"
+              animate={{ x: ["-12%", "12%", "-12%"] }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </>
         ) : null}
         <div className="relative z-10 p-2 md:p-3">
           <iframe
@@ -1060,321 +1063,14 @@ function MagneticLink({ href, children, className, target, rel }: { href: string
   );
 }
 
-function NebulaField({ turbulence, density }: { turbulence: number; density: number }) {
-  const pointsRef = useRef<THREE.Points>(null);
-  const basePositionsRef = useRef<Float32Array | null>(null);
-
-  const starField = useMemo(() => {
-    const count = Math.max(320, Math.floor(1100 * density));
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const colorA = new THREE.Color("#22d3ee");
-    const colorB = new THREE.Color("#8b5cf6");
-
-    for (let i = 0; i < count; i += 1) {
-      const i3 = i * 3;
-      const radius = 2.5 + Math.random() * 8;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-
-      positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      positions[i3 + 2] = radius * Math.cos(phi);
-
-      const mixed = colorA.clone().lerp(colorB, Math.random());
-      colors[i3] = mixed.r;
-      colors[i3 + 1] = mixed.g;
-      colors[i3 + 2] = mixed.b;
-    }
-
-    return { positions, colors };
-  }, [density]);
-
-  useEffect(() => {
-    basePositionsRef.current = starField.positions.slice();
-  }, [starField.positions]);
-
-  useFrame((state, delta) => {
-    if (!pointsRef.current) return;
-    pointsRef.current.rotation.y += delta * 0.03;
-
-    const geometry = pointsRef.current.geometry;
-    const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
-    const base = basePositionsRef.current;
-
-    if (base) {
-      const drift = 0.02 + turbulence * 0.06;
-      for (let i = 0; i < attribute.array.length; i += 3) {
-        const seed = i * 0.015;
-        attribute.array[i] = base[i] + Math.sin(state.clock.elapsedTime * (0.55 + turbulence * 0.3) + seed) * drift;
-        attribute.array[i + 1] = base[i + 1] + Math.cos(state.clock.elapsedTime * (0.48 + turbulence * 0.25) + seed) * drift;
-      }
-      attribute.needsUpdate = true;
-    }
-
-    pointsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * (0.08 + turbulence * 0.04)) * (0.08 + turbulence * 0.04);
-  });
-
+function LowCostBackgroundGlow({ className }: { className?: string }) {
   return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[starField.positions, 3]} />
-        <bufferAttribute attach="attributes-color" args={[starField.colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial size={0.028} sizeAttenuation vertexColors transparent opacity={0.78} depthWrite={false} />
-    </points>
-  );
-}
-
-function CircuitGrid({ turbulence }: { turbulence: number }) {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    const energy = 1 + turbulence * 1.4;
-    groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.2 * energy) * (0.03 + turbulence * 0.03);
-    groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.24 * energy) * (0.08 + turbulence * 0.06);
-  });
-
-  return (
-    <group ref={groupRef} position={[0, -0.8, -1.5]}>
-      <gridHelper args={[18, 34, "#22d3ee", "#1d4ed8"]} rotation={[Math.PI / 2.7, 0, 0]} />
-      <gridHelper args={[11, 20, "#8b5cf6", "#1e293b"]} position={[0, 0, -1.2]} rotation={[Math.PI / 2.7, 0, 0]} />
-    </group>
-  );
-}
-
-function ParticleTunnel({ turbulence, density }: { turbulence: number; density: number }) {
-  const pointsRef = useRef<THREE.Points>(null);
-  const basePositionsRef = useRef<Float32Array | null>(null);
-
-  const tunnel = useMemo(() => {
-    const count = Math.max(460, Math.floor(1400 * density));
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const colorA = new THREE.Color("#38bdf8");
-    const colorB = new THREE.Color("#a78bfa");
-
-    for (let i = 0; i < count; i += 1) {
-      const i3 = i * 3;
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 1.6 + Math.random() * 2.9;
-      const z = -12 + Math.random() * 24;
-
-      positions[i3] = Math.cos(angle) * radius;
-      positions[i3 + 1] = Math.sin(angle) * radius;
-      positions[i3 + 2] = z;
-
-      const mixed = colorA.clone().lerp(colorB, Math.random());
-      colors[i3] = mixed.r;
-      colors[i3 + 1] = mixed.g;
-      colors[i3 + 2] = mixed.b;
-    }
-
-    return { positions, colors };
-  }, [density]);
-
-  useEffect(() => {
-    basePositionsRef.current = tunnel.positions.slice();
-  }, [tunnel.positions]);
-
-  useFrame((state, delta) => {
-    if (!pointsRef.current) return;
-
-    const geometry = pointsRef.current.geometry;
-    const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
-    const base = basePositionsRef.current;
-    const speed = 2.4 + turbulence * 2.1;
-    const swirl = 0.035 + turbulence * 0.12;
-
-    for (let i = 2; i < attribute.array.length; i += 3) {
-      attribute.array[i] += delta * speed;
-      if (attribute.array[i] > 6) attribute.array[i] = -12;
-
-      if (base) {
-        const index = i - 2;
-        const seed = index * 0.01;
-        attribute.array[index] = base[index] + Math.sin(state.clock.elapsedTime * (0.8 + turbulence * 0.4) + seed) * swirl;
-        attribute.array[index + 1] = base[index + 1] + Math.cos(state.clock.elapsedTime * (0.72 + turbulence * 0.35) + seed) * swirl;
-      }
-    }
-    attribute.needsUpdate = true;
-    pointsRef.current.rotation.z = Math.sin(state.clock.elapsedTime * (0.2 + turbulence * 0.22)) * (0.08 + turbulence * 0.08);
-  });
-
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[tunnel.positions, 3]} />
-        <bufferAttribute attach="attributes-color" args={[tunnel.colors, 3]} />
-      </bufferGeometry>
-      <pointsMaterial size={0.032} sizeAttenuation vertexColors transparent opacity={0.72} depthWrite={false} />
-    </points>
-  );
-}
-
-function DistortionPlane({
-  modeLerpRef,
-  intensity,
-  transitionPulseRef,
-}: {
-  modeLerpRef: MutableRefObject<number>;
-  intensity: number;
-  transitionPulseRef: MutableRefObject<number>;
-}) {
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
-
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uMode: { value: 0 },
-      uIntensity: { value: 0 },
-      uPulse: { value: 0 },
-    }),
-    [],
-  );
-
-  useFrame((state) => {
-    if (!materialRef.current) return;
-    uniforms.uTime.value = state.clock.elapsedTime;
-    uniforms.uMode.value = modeLerpRef.current;
-    uniforms.uIntensity.value = intensity;
-    uniforms.uPulse.value = transitionPulseRef.current;
-  });
-
-  return (
-    <mesh position={[0, 0, -2.6]} scale={[16, 10, 1]}>
-      <planeGeometry args={[1, 1, 80, 80]} />
-      <shaderMaterial
-        ref={materialRef}
-        transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        uniforms={uniforms}
-        vertexShader={`
-          varying vec2 vUv;
-          uniform float uTime;
-          uniform float uIntensity;
-          void main() {
-            vUv = uv;
-            vec3 pos = position;
-            pos.z += sin((uv.x * 14.0) + (uTime * 0.9)) * 0.02 * (0.5 + uIntensity);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-          }
-        `}
-        fragmentShader={`
-          varying vec2 vUv;
-          uniform float uTime;
-          uniform float uMode;
-          uniform float uIntensity;
-          uniform float uPulse;
-
-          vec3 palette(float t) {
-            vec3 nebula = vec3(0.12, 0.86, 0.95);
-            vec3 circuit = vec3(0.36, 0.64, 1.00);
-            vec3 tunnel = vec3(0.72, 0.54, 1.00);
-            if (t < 1.0) {
-              return mix(nebula, circuit, smoothstep(0.0, 1.0, t));
-            }
-            return mix(circuit, tunnel, smoothstep(1.0, 2.0, t));
-          }
-
-          void main() {
-            vec2 uv = vUv;
-            float band = sin((uv.y * 120.0) + (uTime * 3.0)) * 0.5 + 0.5;
-            float ripple = sin((uv.x * 20.0 + uv.y * 18.0) + uTime * 1.7) * 0.0035 * (0.45 + uIntensity);
-            uv.x += ripple;
-
-            float vignette = smoothstep(0.75, 0.1, length(uv - 0.5));
-            float pulse = smoothstep(0.0, 1.0, uPulse) * (sin(uTime * 8.0) * 0.5 + 0.5);
-            float alpha = (0.015 + 0.07 * band) * (0.35 + vignette) * (0.5 + uIntensity * 0.5) + pulse * 0.12;
-
-            vec3 color = palette(uMode) * (0.45 + band * 0.65 + pulse * 0.5);
-            gl_FragColor = vec4(color * alpha, alpha);
-          }
-        `}
-      />
-    </mesh>
-  );
-}
-
-function GpuInspiredScene({
-  mode,
-  motionEnergy,
-  sectionSignal,
-  lite,
-}: {
-  mode: SceneMode;
-  motionEnergy: number;
-  sectionSignal: number;
-  lite: boolean;
-}) {
-  const sceneRef = useRef<THREE.Group>(null);
-  const chromaOffset = useMemo(() => new THREE.Vector2(0.0008, 0.0012), []);
-  const modeLerpRef = useRef(0);
-  const modeTargetRef = useRef(0);
-  const transitionPulseRef = useRef(0);
-
-  const turbulence = THREE.MathUtils.clamp(motionEnergy, 0, 1.5);
-  const config = renderConfig;
-
-  useEffect(() => {
-    const index = mode === "nebula" ? 0 : mode === "circuit" ? 1 : 2;
-    modeTargetRef.current = index;
-    transitionPulseRef.current = 1;
-  }, [mode]);
-
-  useEffect(() => {
-    transitionPulseRef.current = 1;
-  }, [sectionSignal]);
-
-  useFrame((state, delta) => {
-    if (!sceneRef.current) return;
-    modeLerpRef.current = THREE.MathUtils.damp(modeLerpRef.current, modeTargetRef.current, 5.5, delta);
-    transitionPulseRef.current = THREE.MathUtils.damp(transitionPulseRef.current, 0, 3.8, delta);
-
-    sceneRef.current.rotation.y = Math.sin(state.clock.elapsedTime * (0.08 + turbulence * 0.05)) * (0.06 + turbulence * 0.04);
-    sceneRef.current.position.y = Math.sin(state.clock.elapsedTime * (0.18 + turbulence * 0.08)) * (0.08 + turbulence * 0.08);
-
-    const aberrationBaseX = 0.0008;
-    const aberrationBaseY = 0.0012;
-    const pulseBoost = transitionPulseRef.current * 0.0012;
-    chromaOffset.set(
-      aberrationBaseX + turbulence * 0.0007 + pulseBoost,
-      aberrationBaseY + turbulence * 0.0011 + pulseBoost,
-    );
-  });
-
-  return (
-    <>
-      <ambientLight intensity={0.22} />
-      <pointLight position={[3, 2, 4]} color="#22d3ee" intensity={1.4} distance={18} />
-      <pointLight position={[-3, -1, -4]} color="#8b5cf6" intensity={1.15} distance={20} />
-
-      <group ref={sceneRef}>
-        {mode === "nebula" ? <NebulaField turbulence={turbulence} density={config.density} /> : null}
-        {mode === "circuit" ? <CircuitGrid turbulence={turbulence} /> : null}
-        {mode === "tunnel" ? <ParticleTunnel turbulence={turbulence} density={config.density} /> : null}
-      </group>
-
-      {!lite ? <DistortionPlane modeLerpRef={modeLerpRef} intensity={turbulence * 0.7} transitionPulseRef={transitionPulseRef} /> : null}
-
-      <EffectComposer multisampling={0}>
-        {lite ? (
-          <>
-            <Bloom intensity={0.28} luminanceThreshold={0.26} luminanceSmoothing={0.45} />
-            <Vignette eskil={false} offset={0.18} darkness={0.8} />
-          </>
-        ) : (
-          <>
-            <Bloom intensity={0.45 + turbulence * 0.18} luminanceThreshold={0.26} luminanceSmoothing={0.45} mipmapBlur />
-            <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={chromaOffset} />
-            <PostNoise blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.12 + turbulence * 0.06} premultiply />
-            <Vignette eskil={false} offset={0.18} darkness={0.8} />
-          </>
-        )}
-      </EffectComposer>
-    </>
+    <motion.div
+      aria-hidden
+      className={className}
+      animate={{ opacity: [0.25, 0.45, 0.25], scale: [1, 1.06, 1] }}
+      transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+    />
   );
 }
 
@@ -1390,15 +1086,12 @@ export default function App() {
   const [certFilter, setCertFilter] = useState<CertCategory>("all");
   const [publicationType, setPublicationType] = useState<"all" | PublicationType>("all");
   const [activeJourney, setActiveJourney] = useState("malaysia");
+  const [activeAward, setActiveAward] = useState("audi-international-collab");
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [lcLang, setLcLang] = useState<LeetLang>("python");
   const [openDifficulty, setOpenDifficulty] = useState<Record<Level, boolean>>({ hard: false, medium: false, easy: false });
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [openCerts, setOpenCerts] = useState<Record<string, boolean>>({});
-  const [sceneMode, setSceneMode] = useState<SceneMode>("nebula");
-  const [sceneAuto, setSceneAuto] = useState(true);
-  const [motionEnergy, setMotionEnergy] = useState(0);
-  const [sectionTransitionSignal, setSectionTransitionSignal] = useState(0);
   const [openExperience, setOpenExperience] = useState<Record<string, boolean>>({
     hackathon: false,
     leadership: false,
@@ -1406,15 +1099,16 @@ export default function App() {
   });
   const [cursorState, setCursorState] = useState({ x: 0, y: 0, active: false, pressed: false });
   const [isLowPerformance, setIsLowPerformance] = useState(false);
-  const motionEnergyRef = useRef(0);
   const enableHeavyFx = !shouldReduceMotion && !isLowPerformance;
 
   useEffect(() => {
     const media = window.matchMedia("(pointer: coarse)");
     const cores = navigator.hardwareConcurrency ?? 4;
     const memory = "deviceMemory" in navigator ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory) || 4 : 4;
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     const detect = () => {
-      const low = media.matches || window.innerWidth < 1100 || cores <= 4 || memory <= 4;
+      const slowNetwork = Boolean(connection?.saveData) || ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "");
+      const low = media.matches || window.innerWidth < 1280 || cores <= 6 || memory <= 8 || slowNetwork;
       setIsLowPerformance(low);
     };
 
@@ -1434,12 +1128,11 @@ export default function App() {
     };
   }, [isLowPerformance]);
 
-  const pointerSampleRef = useRef({ x: 0, y: 0, t: 0 });
-  const scrollSampleRef = useRef({ y: 0, t: 0 });
+  const ambientDensity = isLowPerformance ? 0.45 : 0.78;
 
   const ambientParticles = useMemo<AmbientParticle[]>(
     () =>
-      Array.from({ length: Math.max(10, Math.floor(24 * renderConfig.density)) }, (_, index) => ({
+      Array.from({ length: Math.max(8, Math.floor(24 * ambientDensity)) }, (_, index) => ({
         id: index,
         size: 2 + (index % 4),
         left: (index * 19) % 100,
@@ -1447,7 +1140,7 @@ export default function App() {
         duration: 5 + (index % 7),
         delay: (index % 5) * 0.6,
       })),
-    [renderConfig.density],
+    [ambientDensity],
   );
 
   const yParallax = useTransform(scrollY, [0, 600], [0, shouldReduceMotion ? 0 : -70]);
@@ -1486,6 +1179,15 @@ export default function App() {
   );
 
   const activeJourneyEntry = journeyEvents.find((event) => event.id === activeJourney) ?? journeyEvents[0];
+  const activeAwardEntry = awards.find((award) => award.id === activeAward) ?? awards[0];
+  const groupedJourneyEvents = useMemo(
+    () =>
+      journeyTrackOrder.map((track) => ({
+        track,
+        events: journeyEvents.filter((event) => event.track === track),
+      })),
+    [],
+  );
 
   const totals = leetcodeData[lcLang].totals;
   const percentages = {
@@ -1528,17 +1230,6 @@ export default function App() {
 
     const onMove = (event: PointerEvent) => {
       setCursorState((prev) => ({ ...prev, x: event.clientX, y: event.clientY }));
-
-      const now = performance.now();
-      const sample = pointerSampleRef.current;
-      if (sample.t > 0) {
-        const dt = Math.max(now - sample.t, 16);
-        const dx = event.clientX - sample.x;
-        const dy = event.clientY - sample.y;
-        const speed = Math.sqrt(dx * dx + dy * dy) / dt;
-        motionEnergyRef.current = Math.min(1.6, Math.max(motionEnergyRef.current, speed * 1.2));
-      }
-      pointerSampleRef.current = { x: event.clientX, y: event.clientY, t: now };
     };
     const onDown = () => setCursorState((prev) => ({ ...prev, pressed: true }));
     const onUp = () => setCursorState((prev) => ({ ...prev, pressed: false }));
@@ -1567,40 +1258,6 @@ export default function App() {
   }, [shouldReduceMotion, isLowPerformance]);
 
   useEffect(() => {
-    if (shouldReduceMotion || isLowPerformance) return;
-
-    const unsubscribe = scrollY.on("change", (latest) => {
-      const now = performance.now();
-      const sample = scrollSampleRef.current;
-
-      if (sample.t > 0) {
-        const dt = Math.max(now - sample.t, 16);
-        const dy = latest - sample.y;
-        const speed = Math.abs(dy) / dt;
-        motionEnergyRef.current = Math.min(1.6, Math.max(motionEnergyRef.current, speed * 1.8));
-      }
-
-      scrollSampleRef.current = { y: latest, t: now };
-    });
-
-    return () => unsubscribe();
-  }, [scrollY, shouldReduceMotion, isLowPerformance]);
-
-  useEffect(() => {
-    if (shouldReduceMotion || isLowPerformance) return;
-
-    let rafId = 0;
-    const tick = () => {
-      motionEnergyRef.current = THREE.MathUtils.lerp(motionEnergyRef.current, 0, 0.08);
-      setMotionEnergy((prev) => THREE.MathUtils.lerp(prev, motionEnergyRef.current, 0.2));
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [shouldReduceMotion, isLowPerformance]);
-
-  useEffect(() => {
     const sectionElements = navItems
       .map((item) => document.getElementById(item.id))
       .filter((element): element is HTMLElement => Boolean(element));
@@ -1625,15 +1282,6 @@ export default function App() {
 
   useEffect(() => {
     setIsMenuOpen(false);
-  }, [activeSection]);
-
-  useEffect(() => {
-    if (!sceneAuto) return;
-    setSceneMode(getSceneForSection(activeSection));
-  }, [activeSection, sceneAuto]);
-
-  useEffect(() => {
-    setSectionTransitionSignal((value) => value + 1);
   }, [activeSection]);
 
   useEffect(() => {
@@ -1869,54 +1517,7 @@ export default function App() {
         style={{ scaleX: scrollYProgress }}
       />
 
-      {enableHeavyFx && (
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-[0] opacity-55 [mask-image:radial-gradient(85%_70%_at_78%_70%,black_42%,transparent_100%)]"
-        >
-          <Canvas
-            camera={{ position: [0, 0, 6.8], fov: 56 }}
-            dpr={isLowPerformance ? [0.7, 1.1] : renderConfig.dpr}
-            gl={{ alpha: true, antialias: !isLowPerformance && renderConfig.antialias, powerPreference: "high-performance" }}
-          >
-            <GpuInspiredScene mode={sceneMode} motionEnergy={motionEnergy} sectionSignal={sectionTransitionSignal} lite={isLowPerformance} />
-          </Canvas>
-        </div>
-      )}
-
-      {enableHeavyFx && (
-        <div className="fixed bottom-4 left-1/2 z-40 w-[min(92vw,540px)] -translate-x-1/2 border border-white/15 bg-[#060816]/80 p-2 backdrop-blur md:left-auto md:right-6 md:w-auto md:translate-x-0">
-          <div className="flex items-center justify-between px-2 pb-2">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/55">WebGL Scene</p>
-            <button
-              type="button"
-              onClick={() => setSceneAuto((prev) => !prev)}
-              className={`border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${sceneAuto ? "border-cyan-300/60 text-cyan-100" : "border-white/25 text-white/55"}`}
-            >
-              {sceneAuto ? "Auto" : "Manual"}
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {sceneModes.map((modeOption) => (
-              <button
-                key={modeOption.key}
-                type="button"
-                onClick={() => {
-                  setSceneAuto(false);
-                  setSceneMode(modeOption.key);
-                }}
-                className={`border px-3 py-1.5 text-xs uppercase tracking-wider transition ${
-                  sceneMode === modeOption.key
-                    ? "border-cyan-300/80 bg-cyan-300/15 text-cyan-100"
-                    : "border-white/20 text-white/70 hover:border-white/40 hover:text-white"
-                }`}
-              >
-                {modeOption.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {enableHeavyFx && <LowCostBackgroundGlow className="pointer-events-none fixed inset-0 z-[0] bg-[radial-gradient(circle_at_24%_18%,rgba(34,211,238,0.14),transparent_38%),radial-gradient(circle_at_78%_72%,rgba(139,92,246,0.14),transparent_42%)]" />}
 
       {enableHeavyFx && (
         <motion.div
@@ -2614,24 +2215,31 @@ export default function App() {
             </motion.h2>
 
             <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.1fr]">
-              <div className="journey-timeline-col space-y-6">
-                {journeyEvents.map((event, index) => (
-                  <motion.button
-                    key={event.id}
-                    onClick={() => setActiveJourney(event.id)}
-                    initial={{ opacity: 0, x: -16 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.08 }}
-                    className={`w-full border-l pl-5 text-left transition ${activeJourney === event.id ? "border-cyan-300" : "border-white/20"}`}
-                  >
-                    <p className="text-xs uppercase tracking-wider text-cyan-200/70">{event.date}</p>
-                    <div className="mt-1 flex items-center justify-between gap-4">
-                      <h3 className="text-xl font-medium">{event.title}</h3>
-                      {activeJourney === event.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <div className="journey-timeline-col space-y-8">
+                {groupedJourneyEvents.map((group, groupIndex) => (
+                  <div key={group.track} className="space-y-4">
+                    <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/70">{group.track}</p>
+                    <div className="space-y-4">
+                      {group.events.map((event, eventIndex) => (
+                        <motion.button
+                          key={event.id}
+                          onClick={() => setActiveJourney(event.id)}
+                          initial={{ opacity: 0, x: -16 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: groupIndex * 0.08 + eventIndex * 0.06 }}
+                          className={`w-full border-l pl-5 text-left transition ${activeJourney === event.id ? "border-cyan-300" : "border-white/20"}`}
+                        >
+                          <p className="text-xs uppercase tracking-wider text-cyan-200/70">{event.date}</p>
+                          <div className="mt-1 flex items-center justify-between gap-4">
+                            <h3 className="text-xl font-medium">{event.title}</h3>
+                            {activeJourney === event.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </div>
+                          <p className="mt-2 text-sm text-white/70">{event.summary}</p>
+                        </motion.button>
+                      ))}
                     </div>
-                    <p className="mt-2 text-sm text-white/70">{event.summary}</p>
-                  </motion.button>
+                  </div>
                 ))}
               </div>
 
@@ -2686,19 +2294,88 @@ export default function App() {
           </div>
         </section>
 
+        <section id="awards" className="immersive-section relative mx-auto w-full max-w-6xl px-6 py-24">
+          <motion.div
+            aria-hidden
+            initial={{ opacity: 0.2, scale: 0.92 }}
+            whileInView={{ opacity: 0.5, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="pointer-events-none absolute -right-16 top-10 h-44 w-44 rounded-full bg-cyan-400/15 blur-3xl"
+          />
+          <motion.h2 data-split="true" initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="section-title text-3xl font-semibold md:text-5xl">
+            Awards
+          </motion.h2>
+          <p className="mt-3 text-sm uppercase tracking-[0.28em] text-cyan-200/70">AUDI DEST 2026</p>
+
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }}
+            className="mt-10 grid gap-10 lg:grid-cols-[0.95fr_1.1fr]"
+          >
+            <div className="space-y-4">
+              {awards.map((award, index) => (
+                <motion.button
+                  key={award.id}
+                  type="button"
+                  onClick={() => setActiveAward(award.id)}
+                  variants={{ hidden: { opacity: 0, x: -16 }, show: { opacity: 1, x: 0 } }}
+                  whileHover={{ x: 4, scale: 1.01 }}
+                  transition={{ delay: index * 0.06 }}
+                  className={`w-full border-l pl-5 text-left transition ${activeAward === award.id ? "border-cyan-300" : "border-white/20"}`}
+                >
+                  <p className="text-xs uppercase tracking-wider text-cyan-200/70">{award.date}</p>
+                  <h3 className="mt-1 text-xl font-medium">{award.title}</h3>
+                  <p className="mt-2 text-sm text-white/70">{award.description}</p>
+                </motion.button>
+              ))}
+            </div>
+
+            <motion.div key={activeAwardEntry.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: "easeOut" }} className="space-y-5">
+              <p className="text-sm leading-relaxed text-white/70">{activeAwardEntry.description}</p>
+              <div>
+                <p className="mb-3 text-xs uppercase tracking-[0.3em] text-cyan-200/80">Photos ({activeAwardEntry.photos.length})</p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {activeAwardEntry.photos.map((photo, index) => (
+                    <motion.button
+                      key={photo}
+                      onClick={() => setSelectedMedia({ type: "image", src: photo })}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.04 }}
+                      whileHover={{ y: -4 }}
+                      className="group relative aspect-[4/3] overflow-hidden border border-white/15"
+                    >
+                      <img src={photo} alt={`${activeAwardEntry.title} photo ${index + 1}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                      <span className="absolute inset-0 bg-gradient-to-t from-[#060816]/55 to-transparent" />
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {activeAwardEntry.videos.length > 0 ? (
+                <div>
+                  <p className="mb-3 text-xs uppercase tracking-[0.3em] text-cyan-200/80">Videos ({activeAwardEntry.videos.length})</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {activeAwardEntry.videos.map((video) => (
+                      <motion.button whileHover={{ y: -4 }} key={video} onClick={() => setSelectedMedia({ type: "video", src: video })} className="group relative aspect-video overflow-hidden border border-white/15 text-left">
+                        <video src={video} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" muted playsInline />
+                        <span className="absolute inset-0 bg-gradient-to-t from-[#060816]/60 to-transparent" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
+          </motion.div>
+        </section>
+
         <section id="publications" className="immersive-section mx-auto w-full max-w-6xl px-6 py-24">
           <motion.h2 data-split="true" initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="section-title text-3xl font-semibold md:text-5xl">
             Publications
           </motion.h2>
-
-          <div className="mt-8 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            {researchMetrics.map((metric) => (
-              <div key={metric.label} className="border border-white/15 bg-white/[0.02] px-3 py-3">
-                <p className="text-xl font-semibold text-cyan-100">{metric.value}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-wider text-white/60">{metric.label}</p>
-              </div>
-            ))}
-          </div>
 
           <div className="mt-8 flex flex-wrap gap-2">
             {(["all", "patent", "journal", "conference", "article"] as const).map((kind) => (
@@ -2716,6 +2393,15 @@ export default function App() {
                 </p>
                 <h3 className="mt-2 text-xl text-white/90">{item.title}</h3>
                 {"description" in item && item.description ? <p className="mt-2 max-w-3xl text-sm text-white/65">{item.description}</p> : null}
+                {"metrics" in item && Array.isArray(item.metrics) ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {item.metrics.map((metric) => (
+                      <span key={metric} className="border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100">
+                        {metric}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </motion.a>
             ))}
           </div>
@@ -2854,6 +2540,7 @@ export default function App() {
                 <a href="#featured" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Featured</a>
                 <a href="#experience" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Experience</a>
                 <a href="#projects" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Projects</a>
+                <a href="#awards" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Awards</a>
                 <a href="#publications" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Publications</a>
                 <a href="#leetcode" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Problem Solving</a>
                 <a href="#contact" className="border border-white/15 px-3 py-2 transition hover:border-cyan-300/40 hover:text-cyan-100">Contact</a>
@@ -2883,9 +2570,8 @@ export default function App() {
             </div>
           </div>
 
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-xs uppercase tracking-wider text-white/45">
+          <div className="mt-10 border-t border-white/10 pt-5 text-xs uppercase tracking-wider text-white/45">
             <p>Copyright {currentYear} Arrhat Nag</p>
-            <p>Built with React, TypeScript, Tailwind CSS, and Framer Motion</p>
           </div>
         </div>
       </footer>
