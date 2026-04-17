@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import Splitting from "splitting";
+import { Analytics } from "@vercel/analytics/react";
 
 type CertCategory = "all" | "ibm" | "upskillist" | "cognitive";
 type LeetLang = "python" | "cpp";
@@ -2611,6 +2612,7 @@ export default function App() {
           </motion.button>
         )}
       </AnimatePresence>
+      <Analytics />
     </motion.div>
   );
 }
